@@ -398,8 +398,10 @@ def add_episode_into_plex(media, file, root, path, show, season=1, ep=1, title="
     if len(show) == 0: Log.warning("show: '%s', s%02de%03d-%03d, file: '%s' has show empty, report logs to dev ASAP" % (show, season, ep, ep2, file))
     else:
       if customMapping is not None:
-        if (season, epn) in customMapping:
-          season, epn = customMapping[(season, epn)]
+        if filename in customMapping:
+            season, epn = customMapping[filename]
+        elif '{},{}'.format(season, epn) in customMapping:
+          season, epn = customMapping['{},{}'.format(season, epn)]
       tv_show = Media.Episode(show, season, epn, title, year)
       tv_show.display_offset = (epn-ep)*100/(ep2-ep+1)
       if filename.upper()=="VIDEO_TS.IFO":  
@@ -844,9 +846,8 @@ def Scan(path, files, media, dirs, language=None, root=None, **kwargs): #get cal
         blob = json.load(f)
         for key in blob:
             value = blob[key]
-            newKey = (int(key.split(',')[0]), int(key.split(',')[1]))
             newValue = (int(value.split(',')[0]), int(value.split(',')[1]))
-            customMapping[newKey] = newValue
+            customMapping[key] = newValue
     
   while True:
     for file in files:
