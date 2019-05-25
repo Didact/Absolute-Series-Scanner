@@ -364,7 +364,7 @@ def clean_string(string, no_parenthesis=False, no_whack=False, no_dash=False, no
   return string
 
 ### Add files into Plex database ########################################################################
-def add_episode_into_plex(media, file, root, path, show, season=1, ep=1, title="", year=None, ep2="", rx="", tvdb_mapping={}, unknown_series_length=False, offset_season=0, offset_episode=0, mappingList={}):
+def add_episode_into_plex(media, file, root, path, show, season=1, ep=1, title="", year=None, ep2="", rx="", tvdb_mapping={}, unknown_series_length=False, offset_season=0, offset_episode=0, mappingList={}, customMapping=None):
   global COUNTER
   # Season/Episode Offset
   if season > 0:  season, ep, ep2 = season+offset_season if offset_season >= 0 else 0, ep+offset_episode, ep2+offset_episode if ep2 else None
@@ -397,6 +397,9 @@ def add_episode_into_plex(media, file, root, path, show, season=1, ep=1, title="
   for epn in range(ep, ep2+1):
     if len(show) == 0: Log.warning("show: '%s', s%02de%03d-%03d, file: '%s' has show empty, report logs to dev ASAP" % (show, season, ep, ep2, file))
     else:
+      if customMapping is not None:
+        if (season, epn) in customMapping:
+          season, epn = customMapping[(season, epn)]
       tv_show = Media.Episode(show, season, epn, title, year)
       tv_show.display_offset = (epn-ep)*100/(ep2-ep+1)
       if filename.upper()=="VIDEO_TS.IFO":  
@@ -833,6 +836,18 @@ def Scan(path, files, media, dirs, language=None, root=None, **kwargs): #get cal
   ### File main loop ###
   global COUNTER
   COUNTER, movie_list, AniDB_op, standard_holding, unknown_holding, run_count = 500, {}, {}, [], [], 1
+  customMapping = None
+  mappingPath = os.path.join(root, path, 'mapping.json')
+  if os.path.isfile(mappingPath):
+    customMapping = {}
+    with open(mappingPath, 'r') as f:
+        blob = json.load(f)
+        for key in blob:
+            value = blob[key]
+            newKey = (int(key.split(',')[0]), int(key.split(',')[1]))
+            newValue = (int(value.split(',')[0]), int(value.split(',')[1]))
+            customMapping[newKey] = newValue
+    
   while True:
     for file in files:
       show, season, ep2, title, year = folder_show, folder_season if folder_season is not None else 1, None, "", ""
@@ -870,7 +885,7 @@ def Scan(path, files, media, dirs, language=None, root=None, **kwargs): #get cal
         filename = os.path.basename(file)
         folder_season = time.gmtime(os.path.getmtime(os.path.join(root, path, filename)) )[0]
         ep            = files_per_date.index(filename)+1 if filename in files_per_date else 0
-        standard_holding.append([os.path.join(root, path, filename), root, path, folder_show if id in folder_show else folder_show+'['+id+']', int(folder_season if folder_season is not None else 1), ep, filename, folder_season, ep, 'YouTube', tvdb_mapping, unknown_series_length, offset_season, offset_episode, mappingList])
+        standard_holding.append([os.path.join(root, path, filename), root, path, folder_show if id in folder_show else folder_show+'['+id+']', int(folder_season if folder_season is not None else 1), ep, filename, folder_season, ep, 'YouTube', tvdb_mapping, unknown_series_length, offset_season, offset_episode, mappingList, customMapping])
         continue
         
       ### Date Regex ###
@@ -888,7 +903,7 @@ def Scan(path, files, media, dirs, language=None, root=None, **kwargs): #get cal
             
       ### Word search for ep number in scrubbed title ###
       words, loop_completed, rx, is_special = list(filter(None, clean_string(ep, False, no_underscore=True).split())), False, "Word Search", False                    #
-      for word in words if path else []:                                                                                                                              #
+      for word in words:                                                                                                                                              #
         ep=word.lower().strip('-.')                                                                                                                                   # cannot use words[words.index(word)] otherwise# if word=='': continue filter prevent "" on double spaces
         if WS_VERSION.search(ep):                                                                                  ep=ep[:-2].rstrip('-.')                            #
         if not ep:                                                                                                 continue                                           #
@@ -916,7 +931,7 @@ def Scan(path, files, media, dirs, language=None, root=None, **kwargs): #get cal
         break
       else:  loop_completed = True
       if not loop_completed and ep.isdigit():
-        standard_holding.append([file, root, path, show, season, int(ep), title, year, int(ep2) if ep2 and ep2.isdigit() else None, rx, tvdb_mapping, unknown_series_length, offset_season, offset_episode, mappingList])
+        standard_holding.append([file, root, path, show, season, int(ep), title, year, int(ep2) if ep2 and ep2.isdigit() else None, rx, tvdb_mapping, unknown_series_length, offset_season, offset_episode, mappingList, customMapping])
         continue
 
       ### Check for Regex: SERIES_RX + ANIDB_RX ###
@@ -968,7 +983,7 @@ def Scan(path, files, media, dirs, language=None, root=None, **kwargs): #get cal
             cumulative_offset = sum( [ AniDB_op[ANIDB_RX.index(rx)][x] for x in Dict(AniDB_op, ANIDB_RX.index(rx), default={0:0}) if x<ep and ANIDB_RX.index(rx) in AniDB_op and x in AniDB_op[ANIDB_RX.index(rx)] ] )
             ep = ANIDB_OFFSET[ANIDB_RX.index(rx)] + int(ep) + offset + cumulative_offset    # Sum of all prior offsets
             #Log.info('ep type offset: {}, ep: {}, offset: {}, cumulative_offset: {}, final ep number: {}'.format(ANIDB_OFFSET[ANIDB_RX.index(rx)], ep, offset, cumulative_offset, ep))
-          standard_holding.append([file, root, path, show, int(season), int(ep), title, year, int(ep2) if ep2 and ep2.isdigit() else int(ep), rx, tvdb_mapping, unknown_series_length, offset_season, offset_episode, mappingList])
+          standard_holding.append([file, root, path, show, int(season), int(ep), title, year, int(ep2) if ep2 and ep2.isdigit() else int(ep), rx, tvdb_mapping, unknown_series_length, offset_season, offset_episode, mappingList, customMapping])
           break
       if match: continue  # next file iteration
       
@@ -976,12 +991,13 @@ def Scan(path, files, media, dirs, language=None, root=None, **kwargs): #get cal
       if " - " in ep and len(ep.split(" - "))>1:  title = clean_string(" - ".join(ep.split(" - ")[1:])).strip()
       COUNTER = COUNTER+1
       #Log.info('COUNTER "{}"'.format(COUNTER))
-      unknown_holding.append([file, root, path, show if path else title, 0, COUNTER, title or clean_string(filename, False, no_underscore=True), year, "", ""])
+      unknown_holding.append([file, root, path, show if path else title, 0, COUNTER, title or clean_string(filename, False, no_underscore=True), year, "", "", {}, False, 0, 0, {}, customMapping])
     if run_count == 1 and len(files) > 0 and len(unknown_holding) == len(files):
       Log.info("[All files were seen as unknown(5XX). Trying one more time without miscellaneous string filtering.]")
       run_count, standard_holding, unknown_holding = run_count + 1, [], []
     else:  break  #Break out and don't try a second run as not all files are unknown or there are no files
-  for entry in standard_holding + unknown_holding:  add_episode_into_plex(media, *entry)
+  for entry in standard_holding + unknown_holding:  
+    add_episode_into_plex(media, *entry)
   if not files:  Log.info("[no files detected] #1")
   if files:  Stack.Scan(path, files, media, dirs)
 
