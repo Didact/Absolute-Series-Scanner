@@ -198,7 +198,7 @@ You can specify the guid to use the following way:
         <TR> <TD> tvdb4     </TD> <TD> Absolute, random season </TD> <TD> Abs/Custom/Arc db   </TD> <TD>Absolute          </TD> <TD>For absolute numbering episodes displayed using series arc as season for long running series with arcs like Dragon Ball Kai, or separated anidb series considered as half seasons by thetvdb (like 'Seraph of the end' numbered 1-24 splitted into 2 seasons). Will take the arc definitions from tvdb4.mapping.xml and posters from tvdb4.posters.xml unless the absolute numbered episodes were placed in season folders already
         <UL><LI>One Piece [tvdb4-81797] </LI></UL>        
         </TD> </TR>
-        <TR> <TD> tvdb5     </TD> <TD> TVDB                    </TD> <TD>Absolute             </TD> <TD>Absolute          </TD> <TD>TheTVDB Absolute numbering order (specifically for Star Wars: The Clone Wars) will remove seasons present and use the 'absolute_number' field order to re-sort the episodes. First ep is s02e15 from memory...
+        <TR> <TD> tvdb5     </TD> <TD> TVDB                    </TD> <TD>Absolute             </TD> <TD>Absolute          </TD> <TD>TheTVDB Absolute numbering order (most useful for Star Wars: The Clone Wars, First ep is s02e15...) will remove seasons present and use the 'absolute_number' tvdb field order to re-sort the episodes. Allow to insert specials in between episodes too (prequel)
 <UL><LI>Star Wars: The Clone Wars [tvdb5-83268] </LI></UL>
 </TD> </TR>
         <TR> <TD> youtube     </TD> <TD> YouTube                    </TD> <TD> None             </TD> <TD> None          </TD> <TD> Put Playlist id (PL... 2+16/32 chars long) on series folder or season folder to have the youtube files downloaded with youtube-dl numbered as per the playlist order</LI></UL>
@@ -206,6 +206,21 @@ You can specify the guid to use the following way:
 </TBODY>
 </TABLE>
 
+You can force the tvdb4 mapping with a "tvdb4.mapping" file in the series folder containing the mapping format.
+Because it doesn't have an XML extension, it won't accept XML tags inside. Format exemple is fom anime tvdbid="331753" name="Black Clover":
+<PRE><CODE>
+    01|001|013|Introduction Arc
+    02|014|019|Dungeon Exploration Arc
+    03|020|027|Royal Capital Arc
+    04|028|039|Eye of the Midnight Sun Arc
+    05|040|050|Seabed Temple Arc
+    06|051|065|Witches' Forest Arc
+    07|066|072|Hot Springs Training Camp Arc
+    08|073|084|Royal Knights Arc
+    09|085|120|Reincarnation Arc
+    10|121|121|Arc 10 (unknown length)
+</CODE></PRE>
+        
 ##### Advanced modes
 For when you have episodes of a series in SEPARATE parent folders but want them to show as a single series in Plex:
 - " [anidb2-xxxxx]" will find the season & episode offset defined in the ScudLee file and add into Plex with it's corresponding TVDB series/season/episode numbers
@@ -301,6 +316,7 @@ You can actually move the plex system folder/storage/database here: (i give no w
 ## Install / Update
 - Download  https://raw.githubusercontent.com/ZeroQI/Absolute-Series-Scanner/master/Scanners/Series/Absolute%20Series%20Scanner.py
 - Save into [...]/Plex Media Server/Scanners/Series/Absolute Series Scanner.py
+
 Note:
 - "Scanners" and "Series" folder are not created by default and will need to be created.
 - "Scanners" folder will be at the same level as "Plug-in Support" folder (in other words the same parent directory)
@@ -321,25 +337,26 @@ chmod -R 775 '/var/lib/plexmediaserver/Library/Application Support/Plex Media Se
   - Make sure you did create a "Series" library, as a "Movie" library will not show a "Series" scanner like ASS
   - Make sure it is saved in [...]/Plex/Library/Application Support/Plex Media Server/Scanners/Series/Absolute Series Scanner.py
   - Check scanner file size and open the scanner file to check if it does have html/xml tags.
-- Recreate a Series library to the same folder, using Hama agent, this way all logs will start afresh
+- [Optional] Recreate a Series library to the same folder, using Hama agent, this way all logs will start afresh
 - if no files are showing, the scanner is crashing, probably a code error, check Plex Media Scanner.log for crash errors
 - If Episodes are missing, wrong seasons or episode numbers, or series missing, check all "(custom ASS)" logs
 - If library doesn't add new content then most likelly the scanner is crashing (after scanner update) and will revert any changes to the library so nothing changes...
-- For scanner or agent issues where the agent doesn't crash, please include impacted series filelist and scanner logs, location below
+- Please include impacted series scanner logs on EACH initial post when reporting "Issues", location below
 
 ## Logs
-Absolute series Scanner saves its custom logs in this relative path Plex Media Server\Plug-in Support\Data\com.plexapp.agents.hama\DataItems\_Logs\...
-You may create a X-Plex-Token.id file in 'Plex Media Server' folder with your token inside to have logs saved per library.
-See this link to find your token value: https://support.plex.tv/hc/en-us/articles/204059436-Finding-your-account-token-X-Plex-Token
+Absolute series Scanner saves its custom logs in this relative path: Plex Media Server\Logs\ASS Scanner Logs\...
 
-If the scanner crash, you will get either no files (library creation) or no change (library already created) and will need to attach the Plex log "Plex Media Scanner.log"
+If the scanner crash, you will get either no files (library creation) or no change (library already created) and will need to attach:
+- [...]/Plex Media Server/Logs/Plex Media Scanner.log
 
-Include the following logs (in any case, specify if file not present):
-- [...]/Plex Media Server/Logs/Plex Media Scanner.log (scanner crash info, no new files added, etc...)
-- [...]/Plex Media Server/Plug-in Support/Data/com.plexapp.agents.hama/DataItems/Library_name/Logs/root_folder_name.filelist.log
-- [...]/Plex Media Server/Plug-in Support/Data/com.plexapp.agents.hama/DataItems/Library_name/Logs/root_folder_name.scanner.log
+To have logs saved per library and also a log is not created per series, you might need to create a Plex token id file (Never share your Plex token)
+- Plex Media Server/X-Plex-Token.id containing the Plex token id by loggin on plex.tv/desktop, then https://plex.tv/devices.xml, it will be MediaContainer/Device ... token="xxxxxxxxxxxxxx"
+
+For issues series specific (indicate if file not present, but create a token id file, see above):
 - [...]/Plex Media Server/Plug-in Support/Data/com.plexapp.agents.hama/DataItems/Logs/root_folder_name.filelist.log
 - [...]/Plex Media Server/Plug-in Support/Data/com.plexapp.agents.hama/DataItems/Logs/root_folder_name.scanner.log
+- [...]/Plex Media Server/Plug-in Support/Data/com.plexapp.agents.hama/DataItems/Logs/Library_name/root_folder_name.filelist.log
+- [...]/Plex Media Server/Plug-in Support/Data/com.plexapp.agents.hama/DataItems/Logs/Library_name/root_folder_name.scanner.log
 
 You will find per-serie logs there with the following extensions as HAMA and ASS gather all logs in one place
 - _root_/root folder name.filelist.log - Scanner filelist and 'plexignore logs
